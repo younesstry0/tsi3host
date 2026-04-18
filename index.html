@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSI3WEB</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta name="description" content="cpge resources. math physics .., exercices, courses and more all in one, cpge tsi site 100 free">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo" data-i18n="siteName">TSI3WEB</a>
+            <button class="menu-toggle" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-links">
+                <li><a href="#home" data-i18n="navHome">Home</a></li>
+                <li><a href="#exercises" data-i18n="navExercises">Exercises</a></li>
+                <li><a href="#courses" data-i18n="navCourses">Courses</a></li>
+                <li><a href="#resources" data-i18n="navResources">General Resources</a></li>
+                <li><a href="#about" data-i18n="navAbout">About</a></li>
+            </ul>
+            <div class="nav-controls">
+                <div class="search-container">
+                    <input type="text" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="Search...">
+                </div>
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang="fr">FR</button>
+                    <button class="lang-btn" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="ar">AR</button>
+                </div>
+                <button class="dark-mode-toggle" aria-label="Dark Mode">
+                    <span class="sun">☀️</span>
+                    <span class="moon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section id="home" class="page-section active">
+            <div class="hero">
+                <h1 data-i18n="welcomeTitle">Welcome to TSI3WEB</h1>
+                <p class="hero-subtitle" data-i18n="welcomeSubtitle">Your educational platform for resources</p>
+            </div>
+            <div class="content-container">
+                <div class="about-text" id="homeContent">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="exercises" class="page-section">
+            <div class="section-header">
+                <h2 data-i18n="navExercises">Exercises</h2>
+                <div class="subject-filters">
+                    <button class="filter-btn active" data-subject="all" data-i18n="all">All</button>
+                    <button class="filter-btn" data-subject="math">Math</button>
+                    <button class="filter-btn" data-subject="physics">Physics</button>
+                </div>
+            </div>
+            <div class="content-container">
+                <div class="resources-grid" id="exercisesGrid">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="courses" class="page-section">
+            <div class="section-header">
+                <h2 data-i18n="navCourses">Courses</h2>
+                <div class="subject-filters">
+                    <button class="filter-btn active" data-subject="all" data-i18n="all">All</button>
+                    <button class="filter-btn" data-subject="math">Math</button>
+                    <button class="filter-btn" data-subject="physics">Physics</button>
+                </div>
+            </div>
+            <div class="content-container">
+                <div class="resources-grid" id="coursesGrid">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="resources" class="page-section">
+            <div class="section-header">
+                <h2 data-i18n="navResources">General Resources</h2>
+                <div class="subject-filters">
+                    <button class="filter-btn active" data-subject="all" data-i18n="all">All</button>
+                    <button class="filter-btn" data-subject="math">Math</button>
+                    <button class="filter-btn" data-subject="physics">Physics</button>
+                </div>
+            </div>
+            <div class="content-container">
+                <div class="resources-grid" id="resourcesGrid">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="page-section">
+            <div class="section-header">
+                <h2 data-i18n="navAbout">About</h2>
+            </div>
+            <div class="content-container">
+                <div class="about-cards">
+                    <div class="about-card">
+                        <h3>Younes Barah</h3>
+                    </div>
+                    <div class="about-card">
+                        <h3>Zakariya Hally</h3>
+                    </div>
+                    <div class="about-card">
+                        <h3>Brahim Naim</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="error-toast" id="errorToast">
+        <span class="error-message"></span>
+        <button class="close-toast">&times;</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
