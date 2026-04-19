@@ -27,7 +27,8 @@
             </ul>
             <div class="nav-controls">
                 <div class="search-container">
-                    <input type="text" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="Search...">
+                    <input type="text" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="Search..." autocomplete="off">
+                    <div class="search-suggestions" id="searchSuggestions"></div>
                 </div>
                 <div class="lang-switcher">
                     <button class="lang-btn active" data-lang="fr">FR</button>
@@ -43,14 +44,29 @@
     </nav>
 
     <main>
-        <section id="home" class="page-section active">
+<section id="home" class="page-section active">
             <div class="hero">
-                <h1 data-i18n="welcomeTitle">Welcome to TSI3WEB</h1>
-                <p class="hero-subtitle" data-i18n="welcomeSubtitle">Your educational platform for resources</p>
+                <div class="hero-shapes">
+                    <div class="hero-shape"></div>
+                    <div class="hero-shape"></div>
+                    <div class="hero-shape"></div>
+                </div>
+                <div class="hero-content">
+                    <h1 data-i18n="welcomeTitle">Welcome to TSI3WEB</h1>
+                    <p class="hero-subtitle" data-i18n="welcomeSubtitle">Your educational platform for resources</p>
+                </div>
             </div>
             <div class="content-container">
-                <div class="about-text" id="homeContent">
-                    <div class="loading">Loading...</div>
+                <div class="home-layout">
+                    <div class="home-image-container">
+                        <img src="https://images.pexels.com/photos/4974914/pexels-photo-4974914.jpeg" alt="Students studying together" class="home-image" loading="lazy">
+                    </div>
+<div class="about-text" id="homeContent">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <span>Loading content...</span>
+                    </div>
+                </div>
                 </div>
             </div>
         </section>
@@ -66,7 +82,10 @@
             </div>
             <div class="content-container">
                 <div class="resources-grid" id="exercisesGrid">
-                    <div class="loading">Loading...</div>
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <span>Loading...</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -82,7 +101,10 @@
             </div>
             <div class="content-container">
                 <div class="resources-grid" id="coursesGrid">
-                    <div class="loading">Loading...</div>
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <span>Loading...</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -98,7 +120,10 @@
             </div>
             <div class="content-container">
                 <div class="resources-grid" id="resourcesGrid">
-                    <div class="loading">Loading...</div>
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <span>Loading...</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -111,12 +136,15 @@
                 <div class="about-cards">
                     <div class="about-card">
                         <h3>Younes Barah</h3>
+                        <span class="about-card-specialty">Mathematics</span>
                     </div>
                     <div class="about-card">
                         <h3>Zakariya Hally</h3>
+                        <span class="about-card-specialty">Physics</span>
                     </div>
                     <div class="about-card">
                         <h3>Brahim Naim</h3>
+                        <span class="about-card-specialty">Engineering Science</span>
                     </div>
                 </div>
             </div>
@@ -124,7 +152,12 @@
     </main>
 
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
+        <div class="spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-inner"></div>
+        </div>
     </div>
 
     <div class="error-toast" id="errorToast">
