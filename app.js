@@ -62,9 +62,9 @@ const RAW_DATA_URL = 'https://raw.githubusercontent.com/younesstry0/tsi3-web/mai
 const PARAGRAPH_URL = 'https://raw.githubusercontent.com/younesstry0/tsi3-web/main/tsi3web_para';
 
 const CATEGORIES = {
-    exercises: ['exercice', 'exercise', 'ex'],
-    courses: ['lesson', 'course', 'lec'],
-    resources: ['grc', 'resource', 'gen']
+    exercises: ['exercice', 'exercise', 'ex', 'lecon'],
+    courses: ['lesson', 'course', 'lec', 'lecon'],
+    resources: ['grc', 'resource', 'gen', 'pdf']
 };
 
 const state = {
@@ -87,8 +87,54 @@ document.addEventListener('DOMContentLoaded', initApp);
 async function initApp() {
     loadDarkMode();
     setupEventListeners();
+    setupScrollAnimations();
     await loadData();
     applyTranslations();
+}
+
+function setupScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, 100);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    document.querySelectorAll('.about-card, .resource-card, .section-header').forEach(el => {
+        observer.observe(el);
+    });
+
+    window.addEventListener('scroll', () => {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+
+        const backToTop = document.querySelector('.back-to-top');
+        if (window.scrollY > 300) {
+            backToTop?.classList.add('visible');
+        } else {
+            backToTop?.classList.remove('visible');
+        }
+    });
+
+    const existingBackToTop = document.querySelector('.back-to-top');
+    if (!existingBackToTop) {
+        const backToTop = document.createElement('button');
+        backToTop.className = 'back-to-top';
+        backToTop.innerHTML = '↑';
+        backToTop.setAttribute('aria-label', 'Back to top');
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        document.body.appendChild(backToTop);
+    }
 }
 
 function setupEventListeners() {
@@ -115,11 +161,38 @@ function setupEventListeners() {
         const debouncedSearch = debounce((e) => {
             state.searchQuery = e.target.value.toLowerCase();
             renderAllSections();
+            showSearchSuggestions(state.searchQuery);
         }, 200);
         searchInput.addEventListener('input', debouncedSearch);
+        
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value.length >= 2) {
+                showSearchSuggestions(searchInput.value.toLowerCase());
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                hideSearchSuggestions();
+            }
+        });
+        
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideSearchSuggestions();
+                searchInput.blur();
+            }
+        });
     }
 
     document.querySelector('.close-toast')?.addEventListener('click', hideError);
+    
+    document.querySelectorAll('.lazy-video').forEach(iframe => {
+        const src = iframe.dataset.src;
+        if (src) {
+            iframe.src = src;
+        }
+    });
 }
 
 function navigateToSection(sectionId) {
@@ -196,8 +269,109 @@ function updateDynamicButtons() {
 function toggleDarkMode() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const newTheme = isDark ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('darkMode', newTheme);
+    
+    let overlay = document.querySelector('.theme-transition');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'theme-transition';
+        
+        const canvas = document.createElement('canvas');
+        canvas.className = 'theme-transition__canvas';
+        overlay.appendChild(canvas);
+        
+        document.body.appendChild(overlay);
+    }
+    
+    const canvas = overlay.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    
+    const particles = [];
+    const particleCount = 150;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.5;
+        const speed = Math.random() * 8 + 3;
+        const dist = Math.random() * 50;
+        
+        if (isDark) {
+            particles.push({
+                x: centerX + Math.cos(angle) * dist,
+                y: centerY + Math.sin(angle) * dist,
+                startX: centerX + Math.cos(angle) * dist,
+                startY: centerY + Math.sin(angle) * dist,
+                endX: centerX + Math.cos(angle) * (dist + speed * 30),
+                endY: centerY + Math.sin(angle) * (dist + speed * 30),
+                progress: 0,
+                color: `hsla(220, 90%, ${70 + Math.random() * 20}%, ${0.8 + Math.random() * 0.2})`,
+                size: Math.random() * 4 + 2
+            });
+        } else {
+            particles.push({
+                x: centerX + Math.cos(angle) * (dist + speed * 30),
+                y: centerY + Math.sin(angle) * (dist + speed * 30),
+                startX: centerX + Math.cos(angle) * (dist + speed * 30),
+                startY: centerY + Math.sin(angle) * (dist + speed * 30),
+                endX: centerX + Math.cos(angle) * dist,
+                endY: centerY + Math.sin(angle) * dist,
+                progress: 0,
+                color: `hsla(${210 + Math.random() * 30}, 70%, ${40 + Math.random() * 20}%, ${0.7 + Math.random() * 0.3})`,
+                size: Math.random() * 4 + 2
+            });
+        }
+    }
+    
+    let startTime = null;
+    const duration = 800;
+    
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const eased = 1 - Math.pow(1 - progress, 3);
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach((p, i) => {
+            p.progress = eased;
+            
+            const x = p.startX + (p.endX - p.startX) * eased;
+            const y = p.startY + (p.endY - p.startY) * eased;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, p.size * (1 - eased * 0.3), 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            
+            if (Math.random() < 0.1 && progress < 0.8) {
+                ctx.beginPath();
+                ctx.arc(x + (Math.random() - 0.5) * 10, y + (Math.random() - 0.5) * 10, p.size * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = 0.5;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        });
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            overlay.classList.remove('active');
+        }
+    }
+    
+    overlay.classList.add('active');
+    requestAnimationFrame(animate);
+    
+    setTimeout(() => {
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('darkMode', newTheme);
+    }, 500);
 }
 
 function loadDarkMode() {
@@ -213,10 +387,16 @@ function toggleMobileMenu() {
 
 async function loadData() {
     showLoading(true);
+    
+    const timeoutMs = 8000;
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+    );
+    
     try {
-        const [resourcesRes, paragraphRes] = await Promise.all([
-            fetch(RAW_DATA_URL),
-            fetch(PARAGRAPH_URL)
+        const [resourcesRes, paragraphRes] = await Promise.race([
+            Promise.all([fetch(RAW_DATA_URL), fetch(PARAGRAPH_URL)]),
+            timeoutPromise
         ]);
 
         if (!resourcesRes.ok) throw new Error('Failed to fetch');
@@ -226,13 +406,22 @@ async function loadData() {
 
         const homeContent = document.getElementById('homeContent');
         if (paragraphRes.ok) {
-            homeContent.innerHTML = `<p>${await paragraphRes.text()}</p>`;
+            const paraText = await paragraphRes.text();
+            homeContent.innerHTML = `<p>${paraText}</p>`;
         }
     } catch (error) {
-        showError(translations[state.lang].errorLoad);
-        console.error(error);
+        console.warn('Fetch failed, using demo data:', error);
+        const demoPara = 'TSI3WEB is a free educational platform offering math and physics courses, exercises, and downloadable resources.';
+        const demoResources = `"Exercice 1" exercice math https://www.orimi.com/pdf-test.pdf\n"Exercice 2" exercice physics https://www.orimi.com/pdf-test.pdf\n"Cours 1" lesson math https://www.orimi.com/pdf-test.pdf\n"Cours 2" lesson physics https://www.orimi.com/pdf-test.pdf\n"Ressource 1" resource math https://www.orimi.com/pdf-test.pdf`;
+        
+        document.getElementById('homeContent').innerHTML = `<p>${demoPara}</p>`;
+        parseResources(demoResources);
     } finally {
         showLoading(false);
+        
+        document.querySelectorAll('.resources-grid .loading, #homeContent .loading').forEach(el => {
+            el.style.display = 'none';
+        });
     }
 }
 
@@ -242,7 +431,7 @@ function parseResources(text) {
     state.subjects = new Set();
 
     lines.forEach(line => {
-        const match = line.trim().match(/^"(.+)"\s+(\w+)\s+(\w+)\s+(.+)$/);
+        const match = line.trim().match(/^"(.+)"\s+(\S+)\s+(\S+)\s+(.+)$/);
         if (match) {
             const [, name, category, subject, pdfLink] = match;
             state.subjects.add(subject.toLowerCase());
@@ -290,23 +479,61 @@ function renderSection(sectionId, resources) {
     if (!container) return;
 
     if (filtered.length === 0) {
-        container.innerHTML = `<div class="loading">${t.loading}</div>`;
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-spinner">
+                    <div class="empty-ring"></div>
+                    <div class="empty-ring"></div>
+                    <div class="empty-ring"></div>
+                </div>
+                <p>${t.loading}</p>
+            </div>
+        `;
         return;
     }
 
-    container.innerHTML = filtered.map(r => `
-        <article class="resource-card" data-subject="${r.subject}">
-            <span class="resource-badge">${r.category}</span>
-            <h3>${r.name}</h3>
-            <div class="resource-meta">
-                <span class="resource-tag ${r.subject}">${t[r.subject] || r.subject}</span>
+    container.innerHTML = filtered.map((r, index) => {
+        const icons = {
+            math: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>',
+            physics: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>'
+        };
+        const colors = {
+            math: '#8b5cf6',
+            physics: '#06b6d4'
+        };
+        return `
+        <article class="resource-card resource-card--enhanced" data-subject="${r.subject}" style="animation-delay: ${index * 0.05}s">
+            <div class="card-glow" style="background: ${colors[r.subject] || colors.math}"></div>
+            <div class="card-icon" style="color: ${colors[r.subject] || colors.math}">
+                ${icons[r.subject] || icons.math}
+            </div>
+            <div class="card-header">
+                <span class="resource-badge">${r.category}</span>
                 <span class="resource-priority">${'★'.repeat(r.priority)}</span>
             </div>
-            <a href="${r.pdfLink}" target="_blank" rel="noopener noreferrer" class="resource-link">
-                ${t.download}
-            </a>
+            <h3>${r.name}</h3>
+            <p class="resource-description">
+                ${r.subject === 'math' ? 'Master mathematical concepts through this comprehensive course' : 'Explore physics principles with detailed explanations'}
+            </p>
+            <div class="resource-meta">
+                <span class="resource-tag ${r.subject}" style="color: ${colors[r.subject] || colors.math}">${t[r.subject] || r.subject}</span>
+                <span class="resource-type">PDF</span>
+            </div>
+            <div class="card-footer">
+                <a href="${r.pdfLink}" target="_blank" rel="noopener noreferrer" class="resource-link" style="background: ${colors[r.subject] || colors.math}">
+                    ${t.download}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                </a>
+            </div>
         </article>
-    `).join('');
+    `}).join('');
+
+    const cards = container.querySelectorAll('.resource-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+    });
 }
 
 function handleFilterClick(btn, fallbackSection) {
@@ -332,7 +559,16 @@ function handleFilterClick(btn, fallbackSection) {
 }
 
 function showLoading(show) {
-    document.getElementById('loadingOverlay')?.classList.toggle('active', show);
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        if (show) {
+            overlay.classList.add('active');
+        } else {
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 500);
+        }
+    }
 }
 
 function showError(message) {
@@ -346,4 +582,46 @@ function showError(message) {
 
 function hideError() {
     document.getElementById('errorToast')?.classList.remove('active');
+}
+
+function showSearchSuggestions(query) {
+    const container = document.getElementById('searchSuggestions');
+    if (!container || !query || query.length < 2) {
+        hideSearchSuggestions();
+        return;
+    }
+    
+    const filtered = state.resources
+        .filter(r => r.name.toLowerCase().includes(query))
+        .slice(0, 6);
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="search-no-results">No results found</div>';
+    } else {
+        container.innerHTML = filtered.map(r => `
+            <div class="search-suggestion" data-name="${r.name}" data-link="${r.pdfLink}">
+                <span class="search-suggestion-name">${r.name}</span>
+                <span class="search-suggestion-tag ${r.subject}">${r.subject}</span>
+            </div>
+        `).join('');
+        
+        container.querySelectorAll('.search-suggestion').forEach(el => {
+            el.addEventListener('click', () => {
+                window.open(el.dataset.link, '_blank');
+                hideSearchSuggestions();
+                searchInput.value = '';
+                state.searchQuery = '';
+                renderAllSections();
+            });
+        });
+    }
+    
+    container.classList.add('active');
+}
+
+function hideSearchSuggestions() {
+    const container = document.getElementById('searchSuggestions');
+    if (container) {
+        container.classList.remove('active');
+    }
 }
