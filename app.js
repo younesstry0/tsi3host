@@ -61,17 +61,31 @@ const translations = {
 const RAW_DATA_URL = 'https://raw.githubusercontent.com/younesstry0/tsi3-web/main/tsi3web.txt';
 const PARAGRAPH_URL = 'https://raw.githubusercontent.com/younesstry0/tsi3-web/main/tsi3web_para';
 
-let currentLang = 'fr';
-let allResources = [];
-let dynamicSubjects = [];
-let currentFilter = { section: 'all', subject: 'all' };
-let searchQuery = '';
+const CATEGORIES = {
+    exercises: ['exercice', 'exercise', 'ex'],
+    courses: ['lesson', 'course', 'lec'],
+    resources: ['grc', 'resource', 'gen']
+};
 
-document.addEventListener('DOMContentLoaded', () => {
-    initApp();
-});
+const state = {
+    lang: 'fr',
+    resources: [],
+    subjects: new Set(),
+    searchQuery: ''
+};
+
+const debounce = (fn, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+    };
+};
+
+document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
+    loadDarkMode();
     setupEventListeners();
     await loadData();
     applyTranslations();
@@ -81,8 +95,7 @@ function setupEventListeners() {
     document.querySelectorAll('.nav-links a').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const section = link.getAttribute('href').replace('#', '');
-            navigateToSection(section);
+            navigateToSection(link.getAttribute('href').replace('#', ''));
         });
     });
 
@@ -91,93 +104,90 @@ function setupEventListeners() {
     });
 
     document.querySelector('.dark-mode-toggle').addEventListener('click', toggleDarkMode);
-
-    document.querySelector('.menu-toggle').addEventListener('click', () => {
-        document.querySelector('.nav-links').classList.toggle('active');
-    });
+    document.querySelector('.menu-toggle').addEventListener('click', toggleMobileMenu);
 
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const section = btn.closest('.page-section').id;
-            const subject = btn.dataset.subject;
-            setFilter(section, subject);
-        });
+        btn.addEventListener('click', () => handleFilterClick(btn));
     });
 
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value.toLowerCase();
+        const debouncedSearch = debounce((e) => {
+            state.searchQuery = e.target.value.toLowerCase();
             renderAllSections();
-        });
+        }, 200);
+        searchInput.addEventListener('input', debouncedSearch);
     }
 
-    document.querySelector('.close-toast').addEventListener('click', hideError);
+    document.querySelector('.close-toast')?.addEventListener('click', hideError);
 }
 
 function navigateToSection(sectionId) {
     document.querySelectorAll('.page-section').forEach(section => {
-        section.classList.remove('active');
+        section.classList.toggle('active', section.id === sectionId);
     });
+
     document.querySelectorAll('.nav-links a').forEach(link => {
-        link.classList.remove('active');
+        link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
     });
 
-    document.getElementById(sectionId).classList.add('active');
-    document.querySelector(`.nav-links a[href="#${sectionId}"]`)?.classList.add('active');
-
-    document.querySelector('.nav-links').classList.remove('active');
-    window.scrollTo(0, 0);
+    document.querySelector('.nav-links')?.classList.remove('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function changeLanguage(lang) {
-    currentLang = lang;
+    state.lang = lang;
+    const isRTL = lang === 'ar';
+
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
     });
-
-    const isRTL = lang === 'ar';
-    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
 
     applyTranslations();
 }
 
 function applyTranslations() {
-    const t = translations[currentLang];
+    const t = translations[state.lang];
+
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.dataset.i18n;
         if (t[key]) el.textContent = t[key];
     });
+
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.dataset.i18nPlaceholder;
         if (t[key]) el.placeholder = t[key];
     });
 
-    updateDynamicSubjectButtons();
+    updateDynamicButtons();
 }
 
-function updateDynamicSubjectButtons() {
-    const t = translations[currentLang];
+function updateDynamicButtons() {
+    const t = translations[state.lang];
+
     document.querySelectorAll('.subject-filters').forEach(container => {
         const section = container.closest('.page-section').id;
         const buttons = container.querySelectorAll('.filter-btn');
-        
+
         buttons.forEach(btn => {
-            if (btn.dataset.subject === 'math') btn.textContent = t.math;
-            if (btn.dataset.subject === 'physics') btn.textContent = t.physics;
-            if (btn.dataset.subject === 'all') btn.textContent = t.all;
+            const subject = btn.dataset.subject;
+            if (subject === 'math') btn.textContent = t.math;
+            if (subject === 'physics') btn.textContent = t.physics;
+            if (subject === 'all') btn.textContent = t.all;
         });
 
-        dynamicSubjects.forEach(subject => {
-            const existing = Array.from(buttons).find(b => b.dataset.subject === subject);
-            if (!existing) {
-                const newBtn = document.createElement('button');
-                newBtn.className = 'filter-btn';
-                newBtn.dataset.subject = subject;
-                newBtn.textContent = subject.charAt(0).toUpperCase() + subject.slice(1);
-                newBtn.addEventListener('click', () => setFilter(section, subject));
-                container.appendChild(newBtn);
+        state.subjects.forEach(subject => {
+            const exists = Array.from(buttons).some(b => b.dataset.subject === subject);
+            if (!exists) {
+                const btn = document.createElement('button');
+                btn.className = 'filter-btn';
+                btn.dataset.subject = subject;
+                btn.textContent = subject.charAt(0).toUpperCase() + subject.slice(1);
+                btn.addEventListener('click', () => handleFilterClick(btn, section));
+                container.appendChild(btn);
             }
         });
     });
@@ -185,8 +195,9 @@ function updateDynamicSubjectButtons() {
 
 function toggleDarkMode() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('darkMode', isDark ? 'light' : 'dark');
+    const newTheme = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('darkMode', newTheme);
 }
 
 function loadDarkMode() {
@@ -196,29 +207,30 @@ function loadDarkMode() {
     }
 }
 
+function toggleMobileMenu() {
+    document.querySelector('.nav-links')?.classList.toggle('active');
+}
+
 async function loadData() {
     showLoading(true);
     try {
-        const [resourcesResponse, paragraphResponse] = await Promise.all([
+        const [resourcesRes, paragraphRes] = await Promise.all([
             fetch(RAW_DATA_URL),
             fetch(PARAGRAPH_URL)
         ]);
 
-        if (!resourcesResponse.ok) throw new Error('Failed to fetch resources');
-        
-        const resourcesText = await resourcesResponse.text();
-        parseResources(resourcesText);
+        if (!resourcesRes.ok) throw new Error('Failed to fetch');
+
+        const text = await resourcesRes.text();
+        parseResources(text);
 
         const homeContent = document.getElementById('homeContent');
-        if (paragraphResponse.ok) {
-            const paragraphText = await paragraphResponse.text();
-            homeContent.innerHTML = `<p>${paragraphText}</p>`;
-        } else {
-            homeContent.innerHTML = `<p>${translations[currentLang].loading}</p>`;
+        if (paragraphRes.ok) {
+            homeContent.innerHTML = `<p>${await paragraphRes.text()}</p>`;
         }
     } catch (error) {
-        showError(translations[currentLang].errorLoad);
-        console.error('Error loading data:', error);
+        showError(translations[state.lang].errorLoad);
+        console.error(error);
     } finally {
         showLoading(false);
     }
@@ -226,114 +238,112 @@ async function loadData() {
 
 function parseResources(text) {
     const lines = text.trim().split('\n');
-    allResources = [];
-    const subjects = new Set();
+    state.resources = [];
+    state.subjects = new Set();
 
     lines.forEach(line => {
         const match = line.trim().match(/^"(.+)"\s+(\w+)\s+(\w+)\s+(.+)$/);
         if (match) {
-            const name = match[1];
-            const category = match[2].toLowerCase();
-            const subject = match[3].toLowerCase();
-            const pdfLink = match[4];
+            const [, name, category, subject, pdfLink] = match;
+            state.subjects.add(subject.toLowerCase());
 
-            subjects.add(subject);
-
-            allResources.push({
+            state.resources.push({
                 name,
-                category,
-                subject,
+                category: category.toLowerCase(),
+                subject: subject.toLowerCase(),
                 pdfLink,
                 priority: Math.floor(Math.random() * 5) + 1
             });
         }
     });
 
-    dynamicSubjects = Array.from(subjects).filter(s => s !== 'math' && s !== 'physics');
+    state.subjects.delete('math');
+    state.subjects.delete('physics');
+
     renderAllSections();
-    updateDynamicSubjectButtons();
+    updateDynamicButtons();
 }
 
 function renderAllSections() {
-    const exerciseCategories = ['exercice', 'exercise', 'ex'];
-    const courseCategories = ['lesson', 'course', 'lec'];
-    const resourceCategories = ['grc', 'resource', 'gen'];
-    
-    renderSection('exercises', allResources.filter(r => exerciseCategories.includes(r.category)));
-    renderSection('courses', allResources.filter(r => courseCategories.includes(r.category)));
-    renderSection('resources', allResources.filter(r => resourceCategories.includes(r.category)));
+    renderSection('exercises', state.resources.filter(r => CATEGORIES.exercises.includes(r.category)));
+    renderSection('courses', state.resources.filter(r => CATEGORIES.courses.includes(r.category)));
+    renderSection('resources', state.resources.filter(r => CATEGORIES.resources.includes(r.category)));
 }
 
 function renderSection(sectionId, resources) {
     const container = document.getElementById(`${sectionId}Grid`);
     const section = document.getElementById(sectionId);
-    const activeFilter = section.querySelector('.filter-btn.active')?.dataset.subject || 'all';
+    const activeFilter = section?.querySelector('.filter-btn.active')?.dataset.subject || 'all';
+    const t = translations[state.lang];
 
-    let filtered = resources;
-    
-    if (activeFilter !== 'all') {
-        filtered = resources.filter(r => r.subject === activeFilter);
-    }
+    let filtered = activeFilter !== 'all'
+        ? resources.filter(r => r.subject === activeFilter)
+        : resources;
 
-    if (searchQuery) {
-        filtered = filtered.filter(r => 
-            r.name.toLowerCase().includes(searchQuery) || 
-            r.subject.toLowerCase().includes(searchQuery)
+    if (state.searchQuery) {
+        filtered = filtered.filter(r =>
+            r.name.toLowerCase().includes(state.searchQuery) ||
+            r.subject.toLowerCase().includes(state.searchQuery)
         );
     }
 
+    if (!container) return;
+
     if (filtered.length === 0) {
-        container.innerHTML = `<div class="loading">${translations[currentLang].loading}</div>`;
+        container.innerHTML = `<div class="loading">${t.loading}</div>`;
         return;
     }
 
     container.innerHTML = filtered.map(r => `
-        <div class="resource-card" data-subject="${r.subject}">
+        <article class="resource-card" data-subject="${r.subject}">
             <span class="resource-badge">${r.category}</span>
             <h3>${r.name}</h3>
             <div class="resource-meta">
-                <span class="resource-tag ${r.subject}">${translations[currentLang][r.subject] || r.subject}</span>
+                <span class="resource-tag ${r.subject}">${t[r.subject] || r.subject}</span>
                 <span class="resource-priority">${'★'.repeat(r.priority)}</span>
             </div>
-            <a href="${r.pdfLink}" target="_blank" class="resource-link">
-                ${translations[currentLang].download}
+            <a href="${r.pdfLink}" target="_blank" rel="noopener noreferrer" class="resource-link">
+                ${t.download}
             </a>
-        </div>
+        </article>
     `).join('');
 }
 
-function setFilter(section, subject) {
+function handleFilterClick(btn, fallbackSection) {
+    const section = btn.closest('.page-section')?.id || fallbackSection;
+    const subject = btn.dataset.subject;
+
     const container = document.querySelector(`#${section} .subject-filters`);
-    container.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.subject === subject);
+    container?.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.subject === subject);
     });
 
-    const sectionId = section === 'exercises' ? 'exercises' : 
-                      section === 'courses' ? 'courses' : 'resources';
     const exerciseCategories = ['exercice', 'exercise', 'ex'];
     const courseCategories = ['lesson', 'course', 'lec'];
     const resourceCategories = ['grc', 'resource', 'gen'];
-    
-    renderSection(sectionId, allResources.filter(r => {
-        if (sectionId === 'exercises') return exerciseCategories.includes(r.category);
-        if (sectionId === 'courses') return courseCategories.includes(r.category);
-        if (sectionId === 'resources') return resourceCategories.includes(r.category);
-    }));
+
+    const categoryFilter = {
+        exercises: exerciseCategories,
+        courses: courseCategories,
+        resources: resourceCategories
+    }[section] || [];
+
+    renderSection(section, state.resources.filter(r => categoryFilter.includes(r.category)));
 }
 
 function showLoading(show) {
-    document.getElementById('loadingOverlay').classList.toggle('active', show);
+    document.getElementById('loadingOverlay')?.classList.toggle('active', show);
 }
 
 function showError(message) {
     const toast = document.getElementById('errorToast');
-    toast.querySelector('.error-message').textContent = message;
-    toast.classList.add('active');
-    setTimeout(hideError, 5000);
+    if (toast) {
+        toast.querySelector('.error-message').textContent = message;
+        toast.classList.add('active');
+        setTimeout(hideError, 5000);
+    }
 }
 
 function hideError() {
-    document.getElementById('errorToast').classList.remove('active');
+    document.getElementById('errorToast')?.classList.remove('active');
 }
-
-loadDarkMode();
