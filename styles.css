@@ -1,6 +1,7 @@
 :root {
     --primary-color: #2563eb;
     --primary-dark: #1d4ed8;
+    --primary-light: #3b82f6;
     --secondary-color: #64748b;
     --bg-color: #ffffff;
     --bg-secondary: #f8fafc;
@@ -10,8 +11,13 @@
     --card-bg: #ffffff;
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     --transition: all 0.3s ease;
+    --transition-fast: all 0.15s ease;
     --radius: 8px;
+    --radius-sm: 4px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --arabic-font: 'Tahoma', 'Arial', sans-serif;
     --math-color: #8b5cf6;
@@ -24,6 +30,7 @@
 [data-theme="dark"] {
     --primary-color: #3b82f6;
     --primary-dark: #2563eb;
+    --primary-light: #60a5fa;
     --secondary-color: #94a3b8;
     --bg-color: #0f172a;
     --bg-secondary: #1e293b;
@@ -33,13 +40,16 @@
     --card-bg: #1e293b;
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }
 
 [dir="rtl"] {
     --font-family: var(--arabic-font);
 }
 
-* {
+*,
+*::before,
+*::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -47,6 +57,8 @@
 
 html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -141,12 +153,12 @@ body {
     padding: 0.5rem 1rem;
     padding-left: 2.5rem;
     border: 1px solid var(--border-color);
-    border-radius: 25px;
+    border-radius: var(--radius-full);
     background-color: var(--bg-secondary);
     color: var(--text-color);
     font-size: 0.9rem;
-    transition: var(--transition);
     width: 160px;
+    transition: var(--transition);
 }
 
 .search-container {
@@ -154,13 +166,18 @@ body {
 }
 
 .search-container::before {
-    content: '🔍';
+    content: '';
     position: absolute;
     left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 0.8rem;
-    opacity: 0.5;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.6;
+    transition: var(--transition-fast);
 }
 
 .search-container input:focus {
@@ -168,6 +185,10 @@ body {
     border-color: var(--primary-color);
     width: 220px;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+
+.search-container input:focus::before {
+    opacity: 1;
 }
 
 .lang-switcher {
@@ -410,7 +431,7 @@ main {
     border: 1px solid var(--border-color);
     background-color: var(--bg-color);
     color: var(--text-color);
-    border-radius: 20px;
+    border-radius: var(--radius-full);
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
@@ -427,7 +448,7 @@ main {
     background-color: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    box-shadow: var(--shadow);
 }
 
 .resources-grid {
